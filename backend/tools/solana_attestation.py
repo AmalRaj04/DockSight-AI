@@ -8,9 +8,10 @@ from datetime import datetime
 class SolanaAttestationTool:
     """Handles attestation of docking analysis to Solana."""
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, dry_run=False):
         self.config = config
         self.network = "devnet" if not config else config.solana_network
+        self.dry_run = dry_run
 
     def attest_analysis(self, analysis_data):
         """Submit analysis attestation to Solana."""
@@ -27,6 +28,25 @@ class SolanaAttestationTool:
                 "report_hash": report_hash,
                 "timestamp": datetime.utcnow().isoformat(),
             }
+
+            if self.dry_run:
+                # Dry-run mode: print hashes but don't submit
+                print("\n[DRY-RUN MODE] Solana Attestation")
+                print(f"  Analysis ID: {analysis_id}")
+                print(f"  Input Hash:  {input_hash}")
+                print(f"  Report Hash: {report_hash}")
+                print(f"  Network:     {self.network}")
+                print(f"  Timestamp:   {attestation_payload['timestamp']}")
+                
+                return {
+                    "success": True,
+                    "transaction_signature": f"dry_run_{analysis_id}",
+                    "analysis_id": analysis_id,
+                    "input_hash": input_hash,
+                    "report_hash": report_hash,
+                    "network": self.network,
+                    "dry_run": True,
+                }
 
             # Submit to Solana (placeholder for actual transaction)
             tx_signature = self._submit_to_solana(attestation_payload)
