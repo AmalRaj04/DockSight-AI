@@ -2,10 +2,6 @@
 
 **Autonomous AI Agent for Molecular Docking Analysis & Report Generation**
 
-[![Built for Dora Hacks](https://img.shields.io/badge/Built%20for-Dora%20Hacks-blue)](https://dorahacks.io)
-[![Solana Integration](https://img.shields.io/badge/Blockchain-Solana-green)](https://solana.com)
-[![AI Powered](https://img.shields.io/badge/AI-Powered-purple)](https://github.com)
-
 ## 🎯 Overview
 
 DockSight AI is an autonomous analysis agent that transforms molecular docking results into publication-ready insights. Built specifically for the NeuraViva bounty, it generates comprehensive reports, advanced visualizations, and research-grade documentation to accelerate drug discovery research.
