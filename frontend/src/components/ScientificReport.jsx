@@ -9,10 +9,35 @@ export default function ScientificReport({ report, rankedLigands }) {
     setTimeout(() => setCopiedSection(null), 2000);
   };
 
+  const exportToCSV = () => {
+    const csv = generateCSV(rankedLigands);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `docking_analysis_${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
+    a.click();
+  };
+
+  const exportToExcel = () => {
+    // Generate TSV (Tab-Separated Values) which Excel can open
+    const tsv = generateTSV(rankedLigands);
+    const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `docking_analysis_${
+      new Date().toISOString().split("T")[0]
+    }.xlsx`;
+    a.click();
+  };
+
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap">
         <button
           onClick={() => copyToClipboard(report, "full")}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
@@ -24,6 +49,18 @@ export default function ScientificReport({ report, rankedLigands }) {
           className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium"
         >
           🖨️ Print/PDF
+        </button>
+        <button
+          onClick={exportToCSV}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
+        >
+          📊 Export CSV
+        </button>
+        <button
+          onClick={exportToExcel}
+          className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium"
+        >
+          📈 Export Excel
         </button>
       </div>
 
@@ -300,4 +337,36 @@ The computational screening identified ${
 
 function generateCitation() {
   return "Molecular docking analysis performed using DockSight AI (v0.1.0) with AutoDock Vina. Analysis verified on Solana blockchain for reproducibility.";
+}
+
+function generateCSV(ligands) {
+  let csv =
+    "Rank,Compound,Binding Affinity (kcal/mol),Binding Strength,Recommendation\n";
+  ligands.forEach((l, i) => {
+    const affinity = parseFloat(l.binding_affinity);
+    const strength =
+      affinity <= -9.0 ? "Strong" : affinity <= -7.0 ? "Moderate" : "Weak";
+    const recommendation =
+      i === 0 ? "Primary candidate" : i === 1 ? "Alternative" : "Further study";
+    csv += `${i + 1},"${l.ligand_name}",${
+      l.binding_affinity
+    },${strength},${recommendation}\n`;
+  });
+  return csv;
+}
+
+function generateTSV(ligands) {
+  let tsv =
+    "Rank\tCompound\tBinding Affinity (kcal/mol)\tBinding Strength\tRecommendation\n";
+  ligands.forEach((l, i) => {
+    const affinity = parseFloat(l.binding_affinity);
+    const strength =
+      affinity <= -9.0 ? "Strong" : affinity <= -7.0 ? "Moderate" : "Weak";
+    const recommendation =
+      i === 0 ? "Primary candidate" : i === 1 ? "Alternative" : "Further study";
+    tsv += `${i + 1}\t${l.ligand_name}\t${
+      l.binding_affinity
+    }\t${strength}\t${recommendation}\n`;
+  });
+  return tsv;
 }
