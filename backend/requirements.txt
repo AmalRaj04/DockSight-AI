@@ -1,0 +1,15 @@
+# Core dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# LLM integration
+groq==0.4.2
+
+# Solana
+solana==0.34.3
+solders==0.21.0
+anchorpy==0.19.1
+
+# Utilities
+python-dotenv==1.0.0

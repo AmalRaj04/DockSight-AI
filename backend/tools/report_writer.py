@@ -1,11 +1,23 @@
 """Tool for composing scientific reports."""
 
+import os
+
 
 class ReportWriter:
     """Composes structured scientific reports from analysis results."""
 
-    def __init__(self):
-        pass
+    def __init__(self, groq_api_key=None):
+        self.groq_api_key = groq_api_key or os.getenv("GROQ_API_KEY")
+        self.groq_client = None
+        
+        if self.groq_api_key:
+            try:
+                from groq import Groq
+                self.groq_client = Groq(api_key=self.groq_api_key)
+            except ImportError:
+                print("Warning: groq package not installed. Install with: pip install groq")
+            except Exception as e:
+                print(f"Warning: Failed to initialize Groq client: {e}")
 
     def compose_report(self, analysis_data):
         """Compose complete scientific report."""
@@ -16,10 +28,84 @@ class ReportWriter:
         report_sections.append(self._generate_introduction())
         report_sections.append(self.generate_methods_section(analysis_data.get("metadata", {})))
         report_sections.append(self.generate_results_section(analysis_data))
-        report_sections.append(self.generate_discussion_section(analysis_data))
+        
+        # Use Groq for discussion if available
+        if self.groq_client:
+            discussion = self._generate_discussion_with_llm(analysis_data)
+        else:
+            discussion = self.generate_discussion_section(analysis_data)
+        
+        report_sections.append(discussion)
         report_sections.append(self.add_scientific_disclaimer())
 
         return "\n\n".join(report_sections)
+
+    def _generate_discussion_with_llm(self, analysis_data):
+        """Generate discussion section using Groq LLM."""
+        ranked_ligands = analysis_data.get("ranked_ligands", [])
+        
+        if not ranked_ligands:
+            return self.generate_discussion_section(analysis_data)
+        
+        # Prepare structured input for LLM
+        prompt = self._build_discussion_prompt(analysis_data)
+        
+        try:
+            response = self.groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",  # Updated to current model
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a scientific writing assistant for molecular docking analysis. Generate clear, accurate, and scientifically responsible discussion text. Use conservative language and emphasize limitations. Do NOT invent data or make efficacy claims."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.2,
+                max_tokens=2000,
+            )
+            
+            llm_discussion = response.choices[0].message.content
+            
+            # Ensure discussion section has proper header
+            if not llm_discussion.startswith("## Discussion"):
+                llm_discussion = "## Discussion\n\n" + llm_discussion
+            
+            return llm_discussion
+            
+        except Exception as e:
+            print(f"Warning: Groq LLM failed, using fallback: {e}")
+            return self.generate_discussion_section(analysis_data)
+
+    def _build_discussion_prompt(self, analysis_data):
+        """Build structured prompt for LLM discussion generation."""
+        ranked_ligands = analysis_data.get("ranked_ligands", [])
+        interactions = analysis_data.get("interactions", {})
+        
+        prompt = "Generate a scientific discussion section for a molecular docking analysis report.\n\n"
+        prompt += "**Ranked Ligands (by binding affinity):**\n"
+        
+        for idx, ligand in enumerate(ranked_ligands[:5], 1):  # Top 5 only
+            prompt += f"{idx}. {ligand['ligand_name']}: {ligand['binding_affinity']} kcal/mol\n"
+        
+        if interactions:
+            prompt += "\n**Interaction Data Available:** Yes\n"
+        
+        prompt += "\n**Requirements:**\n"
+        prompt += "- Interpret the binding affinity results\n"
+        prompt += "- Discuss the top-ranked ligand\n"
+        prompt += "- Mention structure-activity relationships if multiple ligands present\n"
+        prompt += "- Include a 'Limitations' subsection discussing:\n"
+        prompt += "  * Computational prediction limitations\n"
+        prompt += "  * Need for experimental validation\n"
+        prompt += "  * Protein flexibility and solvent approximations\n"
+        prompt += "- Use conservative, qualified language (e.g., 'suggests', 'may indicate')\n"
+        prompt += "- Do NOT make drug efficacy or safety claims\n"
+        prompt += "- Keep discussion concise (3-4 paragraphs)\n"
+        
+        return prompt
 
     def _generate_header(self, analysis_data):
         """Generate report header."""

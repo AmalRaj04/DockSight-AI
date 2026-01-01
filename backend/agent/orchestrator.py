@@ -11,13 +11,15 @@ from backend.tools.solana_attestation import SolanaAttestationTool
 class DockingAnalysisOrchestrator:
     """Main orchestrator for the docking analysis agent."""
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, groq_api_key=None, enable_solana=False):
         self.state_machine = StateMachine()
         self.parser = DockingParser()
         self.ranker = LigandRanker()
-        self.report_writer = ReportWriter()
+        self.report_writer = ReportWriter(groq_api_key=groq_api_key)
         self.visualizer = VisualizationGenerator()
-        self.solana_attestor = SolanaAttestationTool(config)
+        # Enable real Solana if requested and configured
+        dry_run = not enable_solana
+        self.solana_attestor = SolanaAttestationTool(config, dry_run=dry_run)
 
     def run_analysis(self, docking_input, enable_attestation=True):
         """Execute the complete docking analysis pipeline."""
@@ -62,6 +64,7 @@ class DockingAnalysisOrchestrator:
         return {
             "status": "complete",
             "ranked_ligands": self.state_machine.state.ranked_ligands,
+            "interactions": self.state_machine.state.interactions,
             "visualizations": self.state_machine.state.visualization_paths,
             "report": report,
             "attestation": attestation_result,
@@ -122,7 +125,8 @@ class DockingAnalysisOrchestrator:
             self.state_machine.transition_to("failed")
         else:
             self.state_machine.state.set_ranked_ligands(ranking_result["ranked_ligands"])
-            self.state_machine.transition_to("complete")
+            # Don't transition to complete yet - allow visualization and reporting
+            # self.state_machine.transition_to("complete")
 
         return ranking_result
 
@@ -181,7 +185,8 @@ class DockingAnalysisOrchestrator:
 
         report_md = self.report_writer.compose_report(analysis_data)
         self.state_machine.state.set_final_report(report_md)
-        self.state_machine.transition_to("complete")
+        # Don't transition to complete yet - allow attestation
+        # self.state_machine.transition_to("complete")
 
         return report_md
 

@@ -1,0 +1,35 @@
+MODEL 1
+REMARK VINA RESULT:    -8.1      0.000      0.000
+REMARK  Name = compound_C
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_2  and  C_3
+REMARK    2  A    between atoms: C_3  and  N_4
+REMARK    3  A    between atoms: N_4  and  C_5
+ROOT
+ATOM      1  C   LIG     1      10.234  15.567  20.123  1.00  0.00     0.000 C
+ATOM      2  C   LIG     1      11.345  16.678  21.234  1.00  0.00     0.000 C
+ATOM      3  N   LIG     1      12.456  17.789  22.345  1.00  0.00     0.000 N
+ATOM      4  C   LIG     1      13.567  18.890  23.456  1.00  0.00     0.000 C
+ATOM      5  O   LIG     1      14.678  19.901  24.567  1.00  0.00     0.000 O
+ENDROOT
+TORSDOF 3
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:    -7.5      1.234      2.345
+ATOM      1  C   LIG     1      10.111  15.444  20.000  1.00  0.00     0.000 C
+ATOM      2  C   LIG     1      11.222  16.555  21.111  1.00  0.00     0.000 C
+ATOM      3  N   LIG     1      12.333  17.666  22.222  1.00  0.00     0.000 N
+ATOM      4  C   LIG     1      13.444  18.777  23.333  1.00  0.00     0.000 C
+ATOM      5  O   LIG     1      14.555  19.888  24.444  1.00  0.00     0.000 O
+TORSDOF 3
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:    -6.9      2.345      3.456
+ATOM      1  C   LIG     1       9.999  15.333  19.888  1.00  0.00     0.000 C
+ATOM      2  C   LIG     1      11.110  16.444  20.999  1.00  0.00     0.000 C
+ATOM      3  N   LIG     1      12.221  17.555  22.110  1.00  0.00     0.000 N
+ATOM      4  C   LIG     1      13.332  18.666  23.221  1.00  0.00     0.000 C
+ATOM      5  O   LIG     1      14.443  19.777  24.332  1.00  0.00     0.000 O
+TORSDOF 3
+ENDMDL

@@ -1,9 +1,11 @@
+[toolchain]
+
 [features]
-seeds = false
+resolution = true
 skip-lint = false
 
 [programs.devnet]
-docksight_attestation = "DockSightAttestation11111111111111111111111"
+docksight_attestation = "2oiFFybUqLb2KhUwXNVJgZF242oE8nmrtwYeCixackN3"
 
 [registry]
 url = "https://api.apr.dev"
@@ -11,6 +13,9 @@ url = "https://api.apr.dev"
 [provider]
 cluster = "devnet"
 wallet = "~/.config/solana/id.json"
+
+[workspace]
+members = ["programs/docksight-attestation"]
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

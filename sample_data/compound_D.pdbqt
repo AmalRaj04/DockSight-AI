@@ -1,0 +1,36 @@
+MODEL 1
+REMARK VINA RESULT:   -10.2      0.000      0.000
+REMARK  Name = compound_D
+REMARK  Best binding affinity compound
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+ROOT
+ATOM      1  C   LIG     1      15.234  20.567  25.123  1.00  0.00     0.000 C
+ATOM      2  C   LIG     1      16.345  21.678  26.234  1.00  0.00     0.000 C
+ATOM      3  N   LIG     1      17.456  22.789  27.345  1.00  0.00     0.000 N
+ATOM      4  C   LIG     1      18.567  23.890  28.456  1.00  0.00     0.000 C
+ATOM      5  O   LIG     1      19.678  24.901  29.567  1.00  0.00     0.000 O
+ATOM      6  C   LIG     1      20.789  25.012  30.678  1.00  0.00     0.000 C
+ENDROOT
+TORSDOF 4
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:    -9.8      1.123      2.234
+ATOM      1  C   LIG     1      15.111  20.444  25.000  1.00  0.00     0.000 C
+ATOM      2  C   LIG     1      16.222  21.555  26.111  1.00  0.00     0.000 C
+ATOM      3  N   LIG     1      17.333  22.666  27.222  1.00  0.00     0.000 N
+ATOM      4  C   LIG     1      18.444  23.777  28.333  1.00  0.00     0.000 C
+ATOM      5  O   LIG     1      19.555  24.888  29.444  1.00  0.00     0.000 O
+ATOM      6  C   LIG     1      20.666  24.999  30.555  1.00  0.00     0.000 C
+TORSDOF 4
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:    -9.1      2.234      3.345
+ATOM      1  C   LIG     1      14.999  20.333  24.888  1.00  0.00     0.000 C
+ATOM      2  C   LIG     1      16.110  21.444  25.999  1.00  0.00     0.000 C
+ATOM      3  N   LIG     1      17.221  22.555  27.110  1.00  0.00     0.000 N
+ATOM      4  C   LIG     1      18.332  23.666  28.221  1.00  0.00     0.000 C
+ATOM      5  O   LIG     1      19.443  24.777  29.332  1.00  0.00     0.000 O
+ATOM      6  C   LIG     1      20.554  24.888  30.443  1.00  0.00     0.000 C
+TORSDOF 4
+ENDMDL
