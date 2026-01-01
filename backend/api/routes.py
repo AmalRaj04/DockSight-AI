@@ -133,6 +133,34 @@ async def health_check():
     }
 
 
+@router.get("/analyses/stats/summary")
+async def get_statistics():
+    """
+    Get overall statistics across all analyses.
+    
+    Returns:
+        Statistics summary
+    """
+    store = get_store()
+    stats = store.get_statistics()
+    
+    return stats
+
+
+@router.get("/analyses/tags")
+async def get_all_tags():
+    """Get all unique tags across all analyses."""
+    store = get_store()
+    return {"tags": store.get_all_tags()}
+
+
+@router.get("/analyses/projects")
+async def get_all_projects():
+    """Get all unique project names."""
+    store = get_store()
+    return {"projects": store.get_all_projects()}
+
+
 @router.get("/analyses")
 async def list_analyses(
     limit: Optional[int] = Query(50, ge=1, le=100),
@@ -213,34 +241,6 @@ async def delete_analysis(analysis_id: str):
         raise HTTPException(status_code=404, detail="Analysis not found")
     
     return {"success": True, "message": f"Analysis {analysis_id} deleted"}
-
-
-@router.get("/analyses/stats/summary")
-async def get_statistics():
-    """
-    Get overall statistics across all analyses.
-    
-    Returns:
-        Statistics summary
-    """
-    store = get_store()
-    stats = store.get_statistics()
-    
-    return stats
-
-
-@router.get("/analyses/tags")
-async def get_all_tags():
-    """Get all unique tags across all analyses."""
-    store = get_store()
-    return {"tags": store.get_all_tags()}
-
-
-@router.get("/analyses/projects")
-async def get_all_projects():
-    """Get all unique project names."""
-    store = get_store()
-    return {"projects": store.get_all_projects()}
 
 
 @router.patch("/analyses/{analysis_id}/metadata")
