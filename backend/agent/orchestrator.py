@@ -1,5 +1,7 @@
 """Agent orchestrator that controls the full docking analysis workflow."""
 
+import uuid
+from datetime import datetime
 from backend.agent.state_machine import StateMachine
 from backend.tools.docking_parser import DockingParser
 from backend.tools.ranking import LigandRanker
@@ -23,14 +25,19 @@ class DockingAnalysisOrchestrator:
 
     def run_analysis(self, docking_input, enable_attestation=True):
         """Execute the complete docking analysis pipeline."""
+        # Generate unique analysis ID
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        analysis_id = f"analysis_{timestamp}_{unique_id}"
+        
         # Step 1: Validate and parse
         if not self.validate_input(docking_input):
-            return {"status": "failed", "errors": self.state_machine.state.validation_errors}
+            return {"status": "failed", "errors": self.state_machine.state.validation_errors, "analysis_id": analysis_id}
 
         self.parse_docking_results(docking_input)
 
         if self.state_machine.state.has_errors():
-            return {"status": "failed", "errors": self.state_machine.state.validation_errors}
+            return {"status": "failed", "errors": self.state_machine.state.validation_errors, "analysis_id": analysis_id}
 
         # Step 2: Rank ligands
         ranking_result = self.rank_ligands(self.state_machine.state.parsed_docking_results)
@@ -38,7 +45,7 @@ class DockingAnalysisOrchestrator:
         if ranking_result.get("errors"):
             for error in ranking_result["errors"]:
                 self.state_machine.state.add_validation_error(error)
-            return {"status": "failed", "errors": self.state_machine.state.validation_errors}
+            return {"status": "failed", "errors": self.state_machine.state.validation_errors, "analysis_id": analysis_id}
 
         # Step 3: Generate visualizations
         self.generate_visualizations(
@@ -63,6 +70,7 @@ class DockingAnalysisOrchestrator:
 
         return {
             "status": "complete",
+            "analysis_id": analysis_id,
             "ranked_ligands": self.state_machine.state.ranked_ligands,
             "interactions": self.state_machine.state.interactions,
             "visualizations": self.state_machine.state.visualization_paths,
