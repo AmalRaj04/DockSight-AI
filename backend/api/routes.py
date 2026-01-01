@@ -83,6 +83,7 @@ async def analyze_docking_results(files: List[UploadFile] = File(...)):
             "visualizations": result.get("visualizations", []),
             "report": result.get("report", ""),
             "attestation": result.get("attestation"),
+            "pdbqt_files": result.get("pdbqt_files", {}),
         }
         
         # Include errors if present

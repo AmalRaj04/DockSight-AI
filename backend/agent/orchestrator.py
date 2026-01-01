@@ -68,6 +68,7 @@ class DockingAnalysisOrchestrator:
             "visualizations": self.state_machine.state.visualization_paths,
             "report": report,
             "attestation": attestation_result,
+            "pdbqt_files": self._get_pdbqt_content(self.state_machine.state.ranked_ligands),
         }
 
     def validate_input(self, docking_input):
@@ -229,3 +230,17 @@ class DockingAnalysisOrchestrator:
     def handle_failure(self, error):
         """Handle failures during analysis execution."""
         self.state_machine.state.add_validation_error(str(error))
+
+    def _get_pdbqt_content(self, ranked_ligands):
+        """Read PDBQT file content for 3D visualization."""
+        pdbqt_data = {}
+        for ligand in ranked_ligands[:5]:  # Top 5 only
+            ligand_name = ligand.get("ligand_name")
+            file_path = ligand.get("file_path")
+            if file_path and file_path.endswith(".pdbqt"):
+                try:
+                    with open(file_path, "r") as f:
+                        pdbqt_data[ligand_name] = f.read()
+                except Exception as e:
+                    print(f"Error reading PDBQT for {ligand_name}: {e}")
+        return pdbqt_data

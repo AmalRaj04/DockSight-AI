@@ -1,6 +1,10 @@
 """Tool for generating molecular visualizations."""
 
 import os
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class VisualizationGenerator:
@@ -19,10 +23,7 @@ class VisualizationGenerator:
         """Generate 2D/3D image of binding pose."""
         ligand_name = pose_data.get("ligand_name")
         pose_id = pose_data.get("pose_id")
-        file_path = pose_data.get("file_path")
-
-        if not file_path or not os.path.exists(file_path):
-            return {"error": f"Pose file not found: {file_path}"}
+        binding_affinity = pose_data.get("binding_affinity")
 
         try:
             # Generate deterministic filename
@@ -32,50 +33,18 @@ class VisualizationGenerator:
             # Ensure output directory exists
             os.makedirs(self.output_dir, exist_ok=True)
 
-            # Placeholder for actual visualization logic
-            # In production, this would use PyMOL, RDKit, or similar
-            visualization_result = self._render_binding_pose(file_path, output_path)
+            # Generate a simple visualization
+            self._create_binding_pose_viz(ligand_name, binding_affinity, output_path)
 
-            if visualization_result.get("success"):
-                return {
-                    "ligand_name": ligand_name,
-                    "pose_id": pose_id,
-                    "output_path": output_path,
-                    "visualization_type": "binding_pose",
-                }
-            else:
-                return {"error": f"Failed to render binding pose for {ligand_name}"}
+            return {
+                "ligand_name": ligand_name,
+                "pose_id": pose_id,
+                "output_path": output_path,
+                "visualization_type": "binding_pose",
+            }
 
         except Exception as e:
             return {"error": f"Visualization generation failed: {str(e)}"}
-
-    def generate_interaction_diagram(self, interactions):
-        """Generate 2D interaction diagram."""
-        if not interactions:
-            return {"error": "No interaction data provided"}
-
-        ligand_name = interactions.get("ligand_name")
-        
-        try:
-            output_filename = self._generate_filename(ligand_name, None, "interactions")
-            output_path = os.path.join(self.output_dir, output_filename)
-
-            os.makedirs(self.output_dir, exist_ok=True)
-
-            # Placeholder for actual 2D interaction diagram generation
-            diagram_result = self._render_interaction_diagram(interactions, output_path)
-
-            if diagram_result.get("success"):
-                return {
-                    "ligand_name": ligand_name,
-                    "output_path": output_path,
-                    "visualization_type": "interaction_diagram",
-                }
-            else:
-                return {"error": f"Failed to render interaction diagram for {ligand_name}"}
-
-        except Exception as e:
-            return {"error": f"Interaction diagram generation failed: {str(e)}"}
 
     def generate_comparison_chart(self, ranked_ligands):
         """Generate comparison chart for multiple ligands."""
@@ -88,71 +57,108 @@ class VisualizationGenerator:
 
             os.makedirs(self.output_dir, exist_ok=True)
 
-            # Placeholder for actual chart generation
-            chart_result = self._render_comparison_chart(ranked_ligands, output_path)
+            # Generate actual chart
+            self._create_comparison_chart(ranked_ligands, output_path)
 
-            if chart_result.get("success"):
-                return {
-                    "output_path": output_path,
-                    "visualization_type": "comparison_chart",
-                    "num_ligands": len(ranked_ligands),
-                }
-            else:
-                return {"error": "Failed to render comparison chart"}
+            return {
+                "output_path": output_path,
+                "visualization_type": "comparison_chart",
+                "num_ligands": len(ranked_ligands),
+            }
 
         except Exception as e:
             return {"error": f"Comparison chart generation failed: {str(e)}"}
 
-    def save_visualization(self, visualization, output_path):
-        """Save visualization to file."""
-        try:
-            # Placeholder for actual save logic
-            # In production, this would handle different image formats
-            return {"success": True, "path": output_path}
-        except Exception as e:
-            return {"error": f"Failed to save visualization: {str(e)}"}
+    def _create_binding_pose_viz(self, ligand_name, binding_affinity, output_path):
+        """Create a simple binding pose visualization."""
+        fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
+        
+        # Create a simple representation
+        affinity_val = float(binding_affinity)
+        
+        # Color based on binding strength
+        if affinity_val <= -9.0:
+            color = '#22c55e'  # Green
+            strength = "Strong"
+        elif affinity_val <= -7.0:
+            color = '#eab308'  # Yellow
+            strength = "Moderate"
+        else:
+            color = '#ef4444'  # Red
+            strength = "Weak"
+        
+        # Draw a simple molecular representation
+        circle = plt.Circle((0.5, 0.5), 0.3, color=color, alpha=0.3)
+        ax.add_patch(circle)
+        
+        # Add ligand name
+        ax.text(0.5, 0.7, ligand_name, ha='center', va='center', 
+                fontsize=20, fontweight='bold')
+        
+        # Add binding affinity
+        ax.text(0.5, 0.5, f'{binding_affinity} kcal/mol', ha='center', va='center',
+                fontsize=16, fontweight='bold', color=color)
+        
+        # Add strength indicator
+        ax.text(0.5, 0.3, f'{strength} Binding', ha='center', va='center',
+                fontsize=14, style='italic', color='gray')
+        
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
+        plt.close()
+
+    def _create_comparison_chart(self, ranked_ligands, output_path):
+        """Create a comparison bar chart."""
+        ligand_names = [l['ligand_name'] for l in ranked_ligands]
+        affinities = [float(l['binding_affinity']) for l in ranked_ligands]
+        
+        # Color code by strength
+        colors = []
+        for aff in affinities:
+            if aff <= -9.0:
+                colors.append('#22c55e')  # Green
+            elif aff <= -7.0:
+                colors.append('#eab308')  # Yellow
+            else:
+                colors.append('#ef4444')  # Red
+        
+        fig, ax = plt.subplots(figsize=(10, 6), facecolor='white')
+        
+        bars = ax.barh(ligand_names, affinities, color=colors, alpha=0.8, edgecolor='black')
+        
+        # Add value labels
+        for i, (bar, aff) in enumerate(zip(bars, affinities)):
+            ax.text(aff - 0.3, i, f'{aff:.1f}', va='center', ha='right',
+                   fontweight='bold', color='white', fontsize=10)
+        
+        ax.set_xlabel('Binding Affinity (kcal/mol)', fontsize=12, fontweight='bold')
+        ax.set_title('Ligand Binding Affinity Comparison', fontsize=14, fontweight='bold', pad=20)
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.axvline(x=-9.0, color='green', linestyle='--', alpha=0.5, linewidth=1)
+        ax.axvline(x=-7.0, color='orange', linestyle='--', alpha=0.5, linewidth=1)
+        
+        # Add legend
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor='#22c55e', label='Strong (≤ -9.0)'),
+            Patch(facecolor='#eab308', label='Moderate (-9.0 to -7.0)'),
+            Patch(facecolor='#ef4444', label='Weak (> -7.0)')
+        ]
+        ax.legend(handles=legend_elements, loc='lower right', fontsize=9)
+        
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
+        plt.close()
 
     def _generate_filename(self, ligand_name, pose_id, viz_type):
         """Generate deterministic filename for visualization."""
-        # Sanitize ligand name for filesystem
         safe_name = ligand_name.replace(" ", "_").replace("/", "_")
         
         if pose_id is not None:
             return f"{safe_name}_pose{pose_id}_{viz_type}.png"
         else:
             return f"{safe_name}_{viz_type}.png"
-
-    def _render_binding_pose(self, structure_file, output_path):
-        """Render 3D binding pose to static image."""
-        # Placeholder for actual rendering logic
-        # In production, this would:
-        # 1. Load protein and ligand structures from PDBQT file
-        # 2. Set up camera angle and lighting
-        # 3. Color protein (lightgray), ligand (green), pocket residues (cyan)
-        # 4. Render to PNG at specified resolution
-        # 5. Save to output_path
-        
-        # For now, return success to maintain pipeline flow
-        return {"success": True, "note": "Rendering not implemented"}
-
-    def _render_interaction_diagram(self, interactions, output_path):
-        """Render 2D interaction diagram."""
-        # Placeholder for actual 2D diagram generation
-        # In production, this would:
-        # 1. Parse interaction data (H-bonds, hydrophobic contacts, etc.)
-        # 2. Generate 2D ligand structure
-        # 3. Annotate interactions with residue labels
-        # 4. Save as PNG
-        
-        return {"success": True, "note": "2D diagram rendering not implemented"}
-
-    def _render_comparison_chart(self, ranked_ligands, output_path):
-        """Render bar chart comparing ligand binding affinities."""
-        # Placeholder for actual chart generation
-        # In production, this would:
-        # 1. Extract binding affinities from ranked_ligands
-        # 2. Create horizontal bar chart
-        # 3. Label with ligand names
-        # 4. Save as PNG
-        
-        return {"success": True, "note": "Chart rendering not implemented"}
