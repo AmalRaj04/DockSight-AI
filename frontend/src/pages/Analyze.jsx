@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiArrowLeft,
+  FiClock,
+  FiX,
+  FiMaximize2,
+  FiFileText,
+  FiImage,
+  FiActivity,
+  FiInfo,
+} from "react-icons/fi";
 import ExecutiveSummary from "../components/ExecutiveSummary";
 import BindingAffinityChart from "../components/BindingAffinityChart";
 import EnhancedLigandsTable from "../components/EnhancedLigandsTable";
 import CollapsibleSection from "../components/CollapsibleSection";
 import MolecularViewer3D from "../components/MolecularViewer3D";
 import ScientificReport from "../components/ScientificReport";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function Analyze() {
   const [result, setResult] = useState(null);
@@ -24,8 +36,8 @@ export default function Analyze() {
 
   if (!result) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen molecular-grid flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading analysis..." />
       </div>
     );
   }
@@ -39,57 +51,37 @@ export default function Analyze() {
   const pdbqtFiles = result.pdbqt_files || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen molecular-grid">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => navigate("/")}
-              className="text-blue-600 hover:text-blue-800 flex items-center font-medium"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
             >
-              <svg
-                className="w-5 h-5 mr-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
+              <FiArrowLeft className="w-5 h-5" />
               Back to Upload
             </button>
             <button
               onClick={() => navigate("/history")}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium"
+              className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:shadow-md font-medium transition-all"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <FiClock className="w-5 h-5" />
               View History
             </button>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            🔬 Analysis Results
+            Analysis Results
           </h1>
           <p className="text-gray-600">
             Comprehensive molecular docking analysis powered by AI
           </p>
-        </div>
+        </motion.div>
 
         {/* Executive Summary */}
         <ExecutiveSummary
@@ -99,9 +91,7 @@ export default function Analyze() {
 
         {/* Binding Affinity Chart */}
         {rankedLigands.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <BindingAffinityChart rankedLigands={rankedLigands} />
-          </div>
+          <BindingAffinityChart rankedLigands={rankedLigands} />
         )}
 
         {/* Enhanced Ranked Ligands Table */}
@@ -111,78 +101,86 @@ export default function Analyze() {
         />
 
         {/* 3D Molecular Viewer (if ligand selected) */}
-        {selectedLigand && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                🧬 3D Molecular Structure
-              </h2>
-              <button
-                onClick={() => setSelectedLigand(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕ Close
-              </button>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-4">
-                Interactive 3D view of{" "}
-                <span className="font-semibold">
-                  {selectedLigand.ligand_name}
-                </span>{" "}
-                (ΔG: {selectedLigand.binding_affinity} kcal/mol)
-              </p>
-              {pdbqtFiles[selectedLigand.ligand_name] ? (
-                <MolecularViewer3D
-                  pdbqtData={pdbqtFiles[selectedLigand.ligand_name]}
-                  ligandName={selectedLigand.ligand_name}
-                  height="500px"
-                />
-              ) : (
-                <div className="bg-white rounded-lg p-2">
-                  <p className="text-center text-gray-500 py-20">
-                    PDBQT data not available for this ligand
-                    <br />
-                    <span className="text-sm">
-                      (Only .pdbqt files can be visualized)
-                    </span>
-                  </p>
+        <AnimatePresence>
+          {selectedLigand && (
+            <motion.div
+              className="glass rounded-xl p-6 mb-6"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <FiActivity className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      3D Molecular Structure
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      {selectedLigand.ligand_name} (ΔG:{" "}
+                      {selectedLigand.binding_affinity} kcal/mol)
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+                <button
+                  onClick={() => setSelectedLigand(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <FiX className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                {pdbqtFiles[selectedLigand.ligand_name] ? (
+                  <MolecularViewer3D
+                    pdbqtData={pdbqtFiles[selectedLigand.ligand_name]}
+                    ligandName={selectedLigand.ligand_name}
+                    height="500px"
+                  />
+                ) : (
+                  <div className="bg-white rounded-lg p-12 text-center">
+                    <p className="text-gray-500">
+                      PDBQT data not available for this ligand
+                    </p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Only .pdbqt files can be visualized
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Interaction Summary */}
         {Object.keys(interactions).length > 0 && (
           <CollapsibleSection
             title="Molecular Interactions"
-            icon="🔗"
+            icon={FiActivity}
             defaultOpen={false}
           >
             <div className="space-y-4">
               {Object.entries(interactions).map(([ligandName, data]) => (
                 <div
                   key={ligandName}
-                  className="border-l-4 border-blue-500 pl-4 bg-blue-50 p-4 rounded-r-lg"
+                  className="border-l-4 border-blue-500 pl-4 bg-blue-50/50 p-4 rounded-r-lg"
                 >
                   <h3 className="font-medium text-gray-900 mb-2">
                     {ligandName}
                   </h3>
                   <div className="text-sm text-gray-600 space-y-1">
                     {data.hydrogen_bonds !== undefined && (
-                      <p>💧 Hydrogen bonds: {data.hydrogen_bonds}</p>
+                      <p>Hydrogen bonds: {data.hydrogen_bonds}</p>
                     )}
                     {data.hydrophobic_contacts !== undefined && (
-                      <p>
-                        🔵 Hydrophobic contacts: {data.hydrophobic_contacts}
-                      </p>
+                      <p>Hydrophobic contacts: {data.hydrophobic_contacts}</p>
                     )}
                     {data.salt_bridges !== undefined && (
-                      <p>⚡ Salt bridges: {data.salt_bridges}</p>
+                      <p>Salt bridges: {data.salt_bridges}</p>
                     )}
                     {data.key_residues && data.key_residues.length > 0 && (
-                      <p>🎯 Key residues: {data.key_residues.join(", ")}</p>
+                      <p>Key residues: {data.key_residues.join(", ")}</p>
                     )}
                   </div>
                 </div>
@@ -195,7 +193,7 @@ export default function Analyze() {
         {visualizations.length > 0 && (
           <CollapsibleSection
             title="Visualizations"
-            icon="📊"
+            icon={FiImage}
             defaultOpen={false}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -206,26 +204,33 @@ export default function Analyze() {
                   : `http://localhost:8000/${imagePath}`;
 
                 return (
-                  <div
+                  <motion.div
                     key={idx}
-                    className="border border-gray-200 rounded-lg p-2 cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all"
+                    className="glass rounded-lg p-3 cursor-pointer hover:shadow-lg transition-all group"
                     onClick={() => setSelectedImage(imageUrl)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <img
-                      src={imageUrl}
-                      alt={viz.ligand_name || `Visualization ${idx + 1}`}
-                      className="w-full h-48 object-contain rounded bg-white"
-                      onError={(e) => {
-                        e.target.src =
-                          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="50%" y="50%" text-anchor="middle" fill="gray">Image not available</text></svg>';
-                      }}
-                    />
+                    <div className="relative">
+                      <img
+                        src={imageUrl}
+                        alt={viz.ligand_name || `Visualization ${idx + 1}`}
+                        className="w-full h-48 object-contain rounded bg-white"
+                        onError={(e) => {
+                          e.target.src =
+                            'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="50%" y="50%" text-anchor="middle" fill="gray">Image not available</text></svg>';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded flex items-center justify-center">
+                        <FiMaximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
                     {viz.ligand_name && (
-                      <p className="text-sm text-gray-600 mt-2 text-center font-medium">
+                      <p className="text-sm text-gray-700 mt-2 text-center font-medium">
                         {viz.ligand_name}
                       </p>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -236,7 +241,7 @@ export default function Analyze() {
         {report && (
           <CollapsibleSection
             title="Scientific Report"
-            icon="📄"
+            icon={FiFileText}
             defaultOpen={true}
           >
             <ScientificReport report={report} rankedLigands={rankedLigands} />
@@ -244,29 +249,47 @@ export default function Analyze() {
         )}
 
         {/* Analysis Metadata */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            ℹ️ Analysis Metadata
-          </h2>
+        <motion.div
+          className="glass rounded-xl p-6 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <FiInfo className="w-5 h-5 text-gray-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Analysis Metadata
+            </h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
+            <div className="flex items-center gap-2">
               <span className="font-medium text-gray-700">Status:</span>
-              <span className="ml-2 capitalize text-gray-600">{status}</span>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  status === "complete"
+                    ? "bg-green-100 text-green-700 border border-green-200"
+                    : "bg-gray-100 text-gray-700 border border-gray-200"
+                }`}
+              >
+                {status}
+              </span>
             </div>
             {attestation && attestation.transaction_signature && (
               <>
-                <div>
+                <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-700">Network:</span>
-                  <span className="ml-2 text-gray-600">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
                     {attestation.network || "devnet"}
                   </span>
                 </div>
                 <div className="md:col-span-2">
-                  <span className="font-medium text-gray-700">
-                    Attestation TX:
+                  <span className="font-medium text-gray-700 block mb-2">
+                    Attestation Transaction:
                   </span>
-                  <div className="mt-1 flex items-center">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 break-all">
+                  <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
+                    <code className="text-xs text-gray-600 break-all flex-1 font-mono">
                       {attestation.transaction_signature}
                     </code>
                     {attestation.explorer_url && (
@@ -274,9 +297,10 @@ export default function Analyze() {
                         href={attestation.explorer_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-2 text-blue-600 hover:text-blue-800 text-xs whitespace-nowrap"
+                        className="text-blue-600 hover:text-blue-700 text-xs whitespace-nowrap font-medium flex items-center gap-1"
                       >
-                        View on Explorer →
+                        View
+                        <FiMaximize2 className="w-3 h-3" />
                       </a>
                     )}
                   </div>
@@ -284,24 +308,41 @@ export default function Analyze() {
               </>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Image Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="max-w-4xl max-h-full">
-            <img
-              src={selectedImage}
-              alt="Enlarged visualization"
-              className="max-w-full max-h-screen object-contain"
-            />
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedImage(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="max-w-6xl max-h-full relative"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-12 right-0 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <FiX className="w-6 h-6 text-white" />
+              </button>
+              <img
+                src={selectedImage}
+                alt="Enlarged visualization"
+                className="max-w-full max-h-screen object-contain rounded-lg"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

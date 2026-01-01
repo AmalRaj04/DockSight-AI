@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  FiArrowLeft,
+  FiTrendingDown,
+  FiLayers,
+  FiBarChart2,
+} from "react-icons/fi";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,6 +17,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 ChartJS.register(
   CategoryScale,
@@ -98,27 +106,33 @@ export default function Compare() {
   const getChartData = () => {
     const comparisonData = getComparisonData();
 
+    const datasets = analyses.map((analysis, idx) => ({
+      label: `Analysis ${idx + 1}`,
+      data: comparisonData.map((d) => d.affinities[idx]),
+      backgroundColor: [
+        "rgba(59, 130, 246, 0.8)",
+        "rgba(34, 197, 94, 0.8)",
+        "rgba(234, 179, 8, 0.8)",
+      ][idx],
+      borderColor: [
+        "rgb(59, 130, 246)",
+        "rgb(34, 197, 94)",
+        "rgb(234, 179, 8)",
+      ][idx],
+      borderWidth: 2,
+      borderRadius: 6,
+    }));
+
     return {
       labels: comparisonData.map((d) => d.ligand),
-      datasets: analyses.map((analysis, idx) => ({
-        label: `Analysis ${idx + 1} (${formatDate(analysis.timestamp)})`,
-        data: comparisonData.map((d) => d.affinities[idx]),
-        backgroundColor: [
-          "rgba(59, 130, 246, 0.8)",
-          "rgba(16, 185, 129, 0.8)",
-          "rgba(245, 158, 11, 0.8)",
-        ][idx],
-      })),
+      datasets,
     };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading comparison...</p>
-        </div>
+      <div className="min-h-screen molecular-grid flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading comparison..." />
       </div>
     );
   }
@@ -126,136 +140,211 @@ export default function Compare() {
   const overlappingLigands = getOverlappingLigands();
   const comparisonData = getComparisonData();
 
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          font: { size: 12, weight: "600" },
+          color: "#374151",
+          padding: 15,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(23, 23, 23, 0.95)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${context.parsed.y} kcal/mol`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: "ΔG (kcal/mol)",
+          font: { size: 12, weight: "600" },
+          color: "#6b7280",
+        },
+        ticks: {
+          color: "#9ca3af",
+          font: { size: 11 },
+        },
+        grid: {
+          color: "rgba(0, 0, 0, 0.05)",
+        },
+      },
+      x: {
+        ticks: {
+          color: "#9ca3af",
+          font: { size: 11 },
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: {
+          display: false,
+        },
+      },
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen molecular-grid">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <button
             onClick={() => navigate("/history")}
-            className="text-blue-600 hover:text-blue-800 mb-4 flex items-center font-medium"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 font-medium transition-colors"
           >
-            <svg
-              className="w-5 h-5 mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <FiArrowLeft className="w-5 h-5" />
             Back to History
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            📊 Analysis Comparison
+            Analysis Comparison
           </h1>
           <p className="text-gray-600">
-            Comparing {analyses.length} analyses side-by-side
+            Side-by-side comparison of {analyses.length} analyses
           </p>
-        </div>
+        </motion.div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {analyses.map((analysis, idx) => (
-            <div key={idx} className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-sm text-gray-600 mb-2">
-                Analysis {idx + 1}
+            <motion.div
+              key={idx}
+              className="glass rounded-xl p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div
+                  className={`w-3 h-3 rounded-full ${
+                    idx === 0
+                      ? "bg-blue-500"
+                      : idx === 1
+                      ? "bg-green-500"
+                      : "bg-yellow-500"
+                  }`}
+                ></div>
+                <h3 className="font-semibold text-gray-900">
+                  Analysis {idx + 1}
+                </h3>
               </div>
-              <div className="text-lg font-bold text-gray-900 mb-2">
-                {formatDate(analysis.timestamp)}
-              </div>
-              <div className="space-y-1 text-sm">
-                <div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <FiLayers className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-600">Ligands:</span>
-                  <span className="ml-2 font-semibold">
-                    {analysis.ranked_ligands.length}
+                  <span className="font-semibold text-gray-900">
+                    {analysis.ranked_ligands?.length || 0}
                   </span>
                 </div>
-                <div>
-                  <span className="text-gray-600">Top:</span>
-                  <span className="ml-2 font-semibold">
-                    {analysis.ranked_ligands[0]?.ligand_name}
-                  </span>
-                </div>
-                <div>
+                <div className="flex items-center gap-2">
+                  <FiTrendingDown className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-600">Best ΔG:</span>
-                  <span className="ml-2 font-semibold text-green-600">
-                    {analysis.ranked_ligands[0]?.binding_affinity} kcal/mol
+                  <span className="font-semibold text-green-600">
+                    {analysis.ranked_ligands?.[0]?.binding_affinity || "N/A"}{" "}
+                    kcal/mol
                   </span>
+                </div>
+                <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                  {formatDate(analysis.timestamp)}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Overlapping Ligands */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            🔗 Overlapping Ligands
-          </h2>
-          {overlappingLigands.length > 0 ? (
+        <motion.div
+          className="glass rounded-xl p-6 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <FiLayers className="w-5 h-5 text-purple-600" />
+            </div>
             <div>
-              <p className="text-gray-600 mb-4">
-                {overlappingLigands.length} ligands appear in all analyses
+              <h2 className="text-xl font-semibold text-gray-900">
+                Overlapping Ligands
+              </h2>
+              <p className="text-sm text-gray-600">
+                {overlappingLigands.length} compounds found in all analyses
               </p>
-              <div className="flex flex-wrap gap-2">
-                {overlappingLigands.map((ligand) => (
-                  <span
-                    key={ligand}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                  >
-                    {ligand}
-                  </span>
-                ))}
-              </div>
+            </div>
+          </div>
+
+          {overlappingLigands.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {overlappingLigands.map((ligand, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium border border-blue-200"
+                >
+                  {ligand}
+                </span>
+              ))}
             </div>
           ) : (
-            <p className="text-gray-600">No overlapping ligands found</p>
+            <p className="text-gray-500 text-sm">
+              No overlapping ligands found between the selected analyses
+            </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Comparison Chart */}
         {overlappingLigands.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              📈 Binding Affinity Comparison
-            </h2>
-            <Bar
-              data={getChartData()}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: { position: "top" },
-                  title: {
-                    display: true,
-                    text: "Binding Affinities Across Analyses",
-                  },
-                },
-                scales: {
-                  y: {
-                    title: { display: true, text: "ΔG (kcal/mol)" },
-                    reverse: true,
-                  },
-                },
-              }}
-            />
-          </div>
+          <motion.div
+            className="glass rounded-xl p-6 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FiBarChart2 className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Binding Affinity Comparison
+              </h2>
+            </div>
+            <div style={{ height: "400px" }}>
+              <Bar data={getChartData()} options={chartOptions} />
+            </div>
+          </motion.div>
         )}
 
         {/* Detailed Comparison Table */}
         {overlappingLigands.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              📋 Detailed Comparison
+          <motion.div
+            className="glass rounded-xl p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Detailed Comparison
             </h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">
                       Ligand
                     </th>
@@ -268,30 +357,34 @@ export default function Compare() {
                       </th>
                     ))}
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                      Change
+                      Difference
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {comparisonData.map((row, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-3 font-medium">{row.ligand}</td>
+                    <tr key={idx} className="hover:bg-gray-50/50">
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {row.ligand}
+                      </td>
                       {row.affinities.map((affinity, aIdx) => (
                         <td key={aIdx} className="px-4 py-3">
-                          {affinity !== null ? `${affinity} kcal/mol` : "N/A"}
+                          <span className="font-semibold text-gray-900">
+                            {affinity !== null ? `${affinity} kcal/mol` : "N/A"}
+                          </span>
                         </td>
                       ))}
                       <td className="px-4 py-3">
                         {row.improvement !== 0 && (
                           <span
-                            className={
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
                               row.improvement < 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }
+                                ? "bg-green-100 text-green-700 border border-green-200"
+                                : "bg-red-100 text-red-700 border border-red-200"
+                            }`}
                           >
                             {row.improvement > 0 ? "+" : ""}
-                            {row.improvement.toFixed(2)} kcal/mol
+                            {row.improvement.toFixed(2)}
                           </span>
                         )}
                       </td>
@@ -300,34 +393,8 @@ export default function Compare() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </motion.div>
         )}
-
-        {/* All Ligands */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {analyses.map((analysis, idx) => (
-            <div key={idx} className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Analysis {idx + 1} - All Ligands
-              </h3>
-              <div className="space-y-2">
-                {analysis.ranked_ligands.slice(0, 10).map((ligand, lIdx) => (
-                  <div key={lIdx} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{ligand.ligand_name}</span>
-                    <span className="font-semibold">
-                      {ligand.binding_affinity}
-                    </span>
-                  </div>
-                ))}
-                {analysis.ranked_ligands.length > 10 && (
-                  <div className="text-sm text-gray-500 italic">
-                    +{analysis.ranked_ligands.length - 10} more
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

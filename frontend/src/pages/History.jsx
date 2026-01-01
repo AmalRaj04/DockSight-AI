@@ -1,11 +1,32 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
+import {
+  FiArrowLeft,
+  FiSearch,
+  FiFilter,
+  FiTag,
+  FiFolder,
+  FiEye,
+  FiEdit2,
+  FiTrash2,
+  FiCheckSquare,
+  FiSquare,
+  FiX,
+  FiPlus,
+  FiCheckCircle,
+  FiActivity,
+  FiTrendingDown,
+  FiLayers,
+  FiAward,
+} from "react-icons/fi";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function History() {
   const [analyses, setAnalyses] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedForComparison, setSelectedForComparison] = useState([]);
 
   // Filters
@@ -47,7 +68,7 @@ export default function History() {
       setAnalyses(data.analyses || []);
       setLoading(false);
     } catch (err) {
-      setError("Failed to load analysis history");
+      toast.error("Failed to load analysis history");
       setLoading(false);
     }
   };
@@ -96,7 +117,7 @@ export default function History() {
       sessionStorage.setItem("analysisResult", JSON.stringify(data));
       navigate("/analyze");
     } catch (err) {
-      alert("Failed to load analysis");
+      toast.error("Failed to load analysis");
     }
   };
 
@@ -110,10 +131,11 @@ export default function History() {
         method: "DELETE",
       });
 
+      toast.success("Analysis deleted");
       fetchAnalyses();
       fetchStatistics();
     } catch (err) {
-      alert("Failed to delete analysis");
+      toast.error("Failed to delete analysis");
     }
   };
 
@@ -137,11 +159,12 @@ export default function History() {
       });
 
       setEditingId(null);
+      toast.success("Metadata updated");
       fetchAnalyses();
       fetchTags();
       fetchProjects();
     } catch (err) {
-      alert("Failed to update metadata");
+      toast.error("Failed to update metadata");
     }
   };
 
@@ -164,13 +187,13 @@ export default function History() {
     } else if (selectedForComparison.length < 3) {
       setSelectedForComparison([...selectedForComparison, analysisId]);
     } else {
-      alert("You can compare up to 3 analyses at a time");
+      toast.error("You can compare up to 3 analyses at a time");
     }
   };
 
   const compareSelected = () => {
     if (selectedForComparison.length < 2) {
-      alert("Please select at least 2 analyses to compare");
+      toast.error("Please select at least 2 analyses to compare");
       return;
     }
     navigate(`/compare?ids=${selectedForComparison.join(",")}`);
@@ -188,95 +211,135 @@ export default function History() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading analysis history...</p>
-        </div>
+      <div className="min-h-screen molecular-grid flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading analysis history..." />
       </div>
     );
   }
 
+  const statsMetrics = statistics
+    ? [
+        {
+          icon: FiActivity,
+          label: "Total Analyses",
+          value: statistics.total_analyses,
+          color: "blue",
+        },
+        {
+          icon: FiLayers,
+          label: "Ligands Tested",
+          value: statistics.total_ligands_tested,
+          color: "green",
+        },
+        {
+          icon: FiFolder,
+          label: "Projects",
+          value: statistics.total_projects,
+          color: "purple",
+        },
+        {
+          icon: FiAward,
+          label: "Best Candidate",
+          value: statistics.best_overall_candidate?.name || "N/A",
+          subtitle: statistics.best_overall_candidate?.affinity
+            ? `${statistics.best_overall_candidate.affinity} kcal/mol`
+            : "",
+          color: "orange",
+        },
+      ]
+    : [];
+
+  const colorClasses = {
+    blue: "from-blue-500 to-blue-600",
+    green: "from-green-500 to-green-600",
+    purple: "from-purple-500 to-purple-600",
+    orange: "from-orange-500 to-orange-600",
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen molecular-grid">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <button
             onClick={() => navigate("/")}
-            className="text-blue-600 hover:text-blue-800 mb-4 flex items-center font-medium"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 font-medium transition-colors"
           >
-            <svg
-              className="w-5 h-5 mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <FiArrowLeft className="w-5 h-5" />
             Back to Upload
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            📚 Analysis History
+            Analysis History
           </h1>
           <p className="text-gray-600">
             View, search, and manage all your docking analyses
           </p>
-        </div>
+        </motion.div>
 
         {/* Statistics Cards */}
         {statistics && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-sm text-gray-600 mb-1">Total Analyses</div>
-              <div className="text-3xl font-bold text-blue-600">
-                {statistics.total_analyses}
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-sm text-gray-600 mb-1">Ligands Tested</div>
-              <div className="text-3xl font-bold text-green-600">
-                {statistics.total_ligands_tested}
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-sm text-gray-600 mb-1">Projects</div>
-              <div className="text-3xl font-bold text-purple-600">
-                {statistics.total_projects}
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-sm text-gray-600 mb-1">Best Candidate</div>
-              <div className="text-lg font-bold text-gray-900 truncate">
-                {statistics.best_overall_candidate?.name || "N/A"}
-              </div>
-              <div className="text-sm text-gray-600">
-                {statistics.best_overall_candidate?.affinity || "N/A"} kcal/mol
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {statsMetrics.map((metric, index) => {
+              const Icon = metric.icon;
+              return (
+                <motion.div
+                  key={index}
+                  className="glass rounded-xl p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div
+                    className={`p-3 rounded-lg bg-gradient-to-br ${
+                      colorClasses[metric.color]
+                    } w-fit mb-4`}
+                  >
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    {metric.label}
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900 truncate">
+                    {metric.value}
+                  </div>
+                  {metric.subtitle && (
+                    <div className="text-sm text-gray-500 mt-1">
+                      {metric.subtitle}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <motion.div
+          className="glass rounded-xl p-6 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search
               </label>
-              <input
-                type="text"
-                placeholder="Search by ligand, ID, or project..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div className="relative">
+                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by ligand, ID, or project..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
             </div>
 
             {/* Project Filter */}
@@ -284,18 +347,21 @@ export default function History() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Project
               </label>
-              <select
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Projects</option>
-                {allProjects.map((project) => (
-                  <option key={project} value={project}>
-                    {project}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <FiFolder className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all"
+                >
+                  <option value="">All Projects</option>
+                  {allProjects.map((project) => (
+                    <option key={project} value={project}>
+                      {project}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Tag Filter */}
@@ -304,25 +370,31 @@ export default function History() {
                 Tags
               </label>
               <div className="flex flex-wrap gap-2">
-                {allTags.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => {
-                      if (selectedTags.includes(tag)) {
-                        setSelectedTags(selectedTags.filter((t) => t !== tag));
-                      } else {
-                        setSelectedTags([...selectedTags, tag]);
-                      }
-                    }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      selectedTags.includes(tag)
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
+                {allTags.length > 0 ? (
+                  allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        if (selectedTags.includes(tag)) {
+                          setSelectedTags(
+                            selectedTags.filter((t) => t !== tag)
+                          );
+                        } else {
+                          setSelectedTags([...selectedTags, tag]);
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                        selectedTags.includes(tag)
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No tags available</p>
+                )}
               </div>
             </div>
           </div>
@@ -335,50 +407,59 @@ export default function History() {
                 setSelectedTags([]);
                 setSelectedProject("");
               }}
-              className="mt-4 text-sm text-blue-600 hover:text-blue-800"
+              className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
             >
+              <FiX className="w-4 h-4" />
               Clear all filters
             </button>
           )}
-        </div>
+        </motion.div>
 
         {/* Comparison Bar */}
-        {selectedForComparison.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center justify-between">
-            <div>
-              <span className="font-medium text-blue-900">
-                {selectedForComparison.length} analyses selected for comparison
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={compareSelected}
-                disabled={selectedForComparison.length < 2}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-sm font-medium"
-              >
-                Compare Selected
-              </button>
-              <button
-                onClick={() => setSelectedForComparison([])}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
-              >
-                Clear Selection
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">{error}</p>
-          </div>
-        )}
+        <AnimatePresence>
+          {selectedForComparison.length > 0 && (
+            <motion.div
+              className="glass rounded-xl p-4 mb-6 flex items-center justify-between border border-blue-200"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="flex items-center gap-2">
+                <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-gray-900">
+                  {selectedForComparison.length} analyses selected for
+                  comparison
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={compareSelected}
+                  disabled={selectedForComparison.length < 2}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                >
+                  Compare Selected
+                </button>
+                <button
+                  onClick={() => setSelectedForComparison([])}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium transition-colors"
+                >
+                  Clear Selection
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Empty State */}
         {!loading && analyses.length === 0 && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">📊</div>
+          <motion.div
+            className="glass rounded-xl p-12 text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiActivity className="w-8 h-8 text-gray-400" />
+            </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {searchTerm || selectedTags.length > 0 || selectedProject
                 ? "No Matching Analyses"
@@ -391,51 +472,60 @@ export default function History() {
             </p>
             <button
               onClick={() => navigate("/")}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Upload Files
             </button>
-          </div>
+          </motion.div>
         )}
 
         {/* Analysis List */}
         {analyses.length > 0 && (
           <div className="space-y-4">
-            {analyses.map((analysis) => (
-              <div
+            {analyses.map((analysis, index) => (
+              <motion.div
                 key={analysis.analysis_id}
-                className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow ${
+                className={`glass rounded-xl p-6 hover:shadow-lg transition-all ${
                   selectedForComparison.includes(analysis.analysis_id)
                     ? "ring-2 ring-blue-500"
                     : ""
                 }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       {/* Comparison Checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={selectedForComparison.includes(
+                      <button
+                        onClick={() => toggleComparison(analysis.analysis_id)}
+                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                      >
+                        {selectedForComparison.includes(
                           analysis.analysis_id
+                        ) ? (
+                          <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <FiSquare className="w-5 h-5" />
                         )}
-                        onChange={() => toggleComparison(analysis.analysis_id)}
-                        className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                      />
+                      </button>
 
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Analysis {analysis.analysis_id.slice(0, 12)}...
+                      <h3 className="text-lg font-semibold text-gray-900 font-mono">
+                        {analysis.analysis_id.slice(0, 30)}...
                       </h3>
 
                       {analysis.attestation?.verified && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-                          ✅ Verified
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full border border-green-200 flex items-center gap-1">
+                          <FiCheckCircle className="w-3 h-3" />
+                          Verified
                         </span>
                       )}
 
                       {analysis.project && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
-                          📁 {analysis.project}
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full border border-purple-200 flex items-center gap-1">
+                          <FiFolder className="w-3 h-3" />
+                          {analysis.project}
                         </span>
                       )}
                     </div>
@@ -450,9 +540,10 @@ export default function History() {
                         {analysis.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                            className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200 flex items-center gap-1"
                           >
-                            🏷️ {tag}
+                            <FiTag className="w-3 h-3" />
+                            {tag}
                           </span>
                         ))}
                       </div>
@@ -460,7 +551,7 @@ export default function History() {
 
                     {editingId === analysis.analysis_id ? (
                       /* Edit Mode */
-                      <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded">
+                      <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg">
                         <div>
                           <label className="block text-sm font-medium mb-1">
                             Project
@@ -469,7 +560,7 @@ export default function History() {
                             type="text"
                             value={editProject}
                             onChange={(e) => setEditProject(e.target.value)}
-                            className="w-full px-3 py-2 border rounded"
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                             placeholder="Project name"
                           />
                         </div>
@@ -484,13 +575,14 @@ export default function History() {
                               value={newTag}
                               onChange={(e) => setNewTag(e.target.value)}
                               onKeyPress={(e) => e.key === "Enter" && addTag()}
-                              className="flex-1 px-3 py-2 border rounded"
+                              className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                               placeholder="Add tag"
                             />
                             <button
                               onClick={addTag}
-                              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                             >
+                              <FiPlus className="w-4 h-4" />
                               Add
                             </button>
                           </div>
@@ -498,14 +590,14 @@ export default function History() {
                             {editTags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded flex items-center gap-1"
+                                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1"
                               >
                                 {tag}
                                 <button
                                   onClick={() => removeTag(tag)}
-                                  className="text-blue-600 hover:text-blue-800"
+                                  className="hover:text-blue-900"
                                 >
-                                  ×
+                                  <FiX className="w-3 h-3" />
                                 </button>
                               </span>
                             ))}
@@ -519,7 +611,7 @@ export default function History() {
                           <textarea
                             value={editNotes}
                             onChange={(e) => setEditNotes(e.target.value)}
-                            className="w-full px-3 py-2 border rounded"
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                             rows="3"
                             placeholder="Add notes..."
                           />
@@ -528,13 +620,13 @@ export default function History() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => saveEdit(analysis.analysis_id)}
-                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                           >
                             Save
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium"
                           >
                             Cancel
                           </button>
@@ -544,29 +636,32 @@ export default function History() {
                       /* View Mode */
                       <>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div>
+                          <div className="flex items-center gap-2">
+                            <FiLayers className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">
                               Ligands:
                             </span>
-                            <span className="ml-2 font-semibold text-gray-900">
+                            <span className="font-semibold text-gray-900">
                               {analysis.ligand_count}
                             </span>
                           </div>
                           {analysis.top_candidate && (
                             <>
-                              <div>
+                              <div className="flex items-center gap-2">
+                                <FiAward className="w-4 h-4 text-gray-400" />
                                 <span className="text-sm text-gray-600">
-                                  Top Candidate:
+                                  Top:
                                 </span>
-                                <span className="ml-2 font-semibold text-gray-900">
+                                <span className="font-semibold text-gray-900">
                                   {analysis.top_candidate.name}
                                 </span>
                               </div>
-                              <div>
+                              <div className="flex items-center gap-2">
+                                <FiTrendingDown className="w-4 h-4 text-gray-400" />
                                 <span className="text-sm text-gray-600">
                                   Best ΔG:
                                 </span>
-                                <span className="ml-2 font-semibold text-green-600">
+                                <span className="font-semibold text-green-600">
                                   {analysis.top_candidate.affinity} kcal/mol
                                 </span>
                               </div>
@@ -575,8 +670,8 @@ export default function History() {
                         </div>
 
                         {analysis.notes && (
-                          <div className="text-sm text-gray-600 italic mb-3">
-                            📝 {analysis.notes}
+                          <div className="text-sm text-gray-600 italic mb-3 p-3 bg-gray-50 rounded-lg">
+                            {analysis.notes}
                           </div>
                         )}
                       </>
@@ -586,25 +681,28 @@ export default function History() {
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => viewAnalysis(analysis.analysis_id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-2 transition-colors"
                     >
-                      View Report
+                      <FiEye className="w-4 h-4" />
+                      View
                     </button>
                     <button
                       onClick={() => startEdit(analysis)}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium"
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium flex items-center gap-2 transition-colors"
                     >
+                      <FiEdit2 className="w-4 h-4" />
                       Edit
                     </button>
                     <button
                       onClick={() => deleteAnalysis(analysis.analysis_id)}
-                      className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm font-medium"
+                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium flex items-center gap-2 transition-colors"
                     >
+                      <FiTrash2 className="w-4 h-4" />
                       Delete
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}

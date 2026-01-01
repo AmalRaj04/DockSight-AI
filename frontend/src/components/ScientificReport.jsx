@@ -1,4 +1,18 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+import {
+  FiCopy,
+  FiCheck,
+  FiDownload,
+  FiPrinter,
+  FiFileText,
+  FiBarChart,
+  FiKey,
+  FiBook,
+  FiMessageSquare,
+  FiBookmark,
+} from "react-icons/fi";
 
 export default function ScientificReport({ report, rankedLigands }) {
   const [copiedSection, setCopiedSection] = useState(null);
@@ -6,6 +20,7 @@ export default function ScientificReport({ report, rankedLigands }) {
   const copyToClipboard = (text, section) => {
     navigator.clipboard.writeText(text);
     setCopiedSection(section);
+    toast.success("Copied to clipboard");
     setTimeout(() => setCopiedSection(null), 2000);
   };
 
@@ -19,10 +34,10 @@ export default function ScientificReport({ report, rankedLigands }) {
       new Date().toISOString().split("T")[0]
     }.csv`;
     a.click();
+    toast.success("CSV exported");
   };
 
   const exportToExcel = () => {
-    // Generate TSV (Tab-Separated Values) which Excel can open
     const tsv = generateTSV(rankedLigands);
     const blob = new Blob([tsv], { type: "text/tab-separated-values" });
     const url = window.URL.createObjectURL(blob);
@@ -32,57 +47,92 @@ export default function ScientificReport({ report, rankedLigands }) {
       new Date().toISOString().split("T")[0]
     }.xlsx`;
     a.click();
+    toast.success("Excel file exported");
   };
+
+  const CopyButton = ({ onClick, copied, section }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+    >
+      {copied === section ? (
+        <>
+          <FiCheck className="w-4 h-4" />
+          Copied
+        </>
+      ) : (
+        <>
+          <FiCopy className="w-4 h-4" />
+          Copy
+        </>
+      )}
+    </button>
+  );
 
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <motion.div
+        className="flex gap-3 flex-wrap"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <button
           onClick={() => copyToClipboard(report, "full")}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
         >
-          {copiedSection === "full" ? "✓ Copied!" : "📋 Copy Full Report"}
+          <FiCopy className="w-4 h-4" />
+          {copiedSection === "full" ? "Copied!" : "Copy Full Report"}
         </button>
         <button
           onClick={() => window.print()}
-          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium transition-colors"
         >
-          🖨️ Print/PDF
+          <FiPrinter className="w-4 h-4" />
+          Print/PDF
         </button>
         <button
           onClick={exportToCSV}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
         >
-          📊 Export CSV
+          <FiDownload className="w-4 h-4" />
+          Export CSV
         </button>
         <button
           onClick={exportToExcel}
-          className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors"
         >
-          📈 Export Excel
+          <FiBarChart className="w-4 h-4" />
+          Export Excel
         </button>
-      </div>
+      </motion.div>
 
       {/* Results Summary Table */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">
-            📊 Results Summary
-          </h3>
-          <button
+      <motion.div
+        className="glass rounded-xl p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FiFileText className="w-5 h-5 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Results Summary</h3>
+          </div>
+          <CopyButton
             onClick={() =>
               copyToClipboard(generateResultsTable(rankedLigands), "results")
             }
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            {copiedSection === "results" ? "✓ Copied" : "📋 Copy Table"}
-          </button>
+            copied={copiedSection}
+            section="results"
+          />
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
                 <th className="px-4 py-3 text-left font-semibold text-gray-700">
                   Rank
                 </th>
@@ -100,7 +150,7 @@ export default function ScientificReport({ report, rankedLigands }) {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {rankedLigands.map((ligand, idx) => {
                 const affinity = parseFloat(ligand.binding_affinity);
                 const strength =
@@ -117,22 +167,29 @@ export default function ScientificReport({ report, rankedLigands }) {
                     : "Further study";
 
                 return (
-                  <tr key={idx} className={idx < 3 ? "bg-blue-50" : ""}>
-                    <td className="px-4 py-3 font-medium">{idx + 1}</td>
-                    <td className="px-4 py-3 font-mono text-sm">
+                  <tr
+                    key={idx}
+                    className={
+                      idx < 3 ? "bg-blue-50/50" : "hover:bg-gray-50/50"
+                    }
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {idx + 1}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-sm text-gray-900">
                       {ligand.ligand_name}
                     </td>
-                    <td className="px-4 py-3 font-semibold">
+                    <td className="px-4 py-3 font-semibold text-gray-900">
                       {ligand.binding_affinity}
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
+                        className={`px-2 py-1 rounded-full text-xs font-medium border ${
                           strength === "Strong"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-green-50 text-green-700 border-green-200"
                             : strength === "Moderate"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                            : "bg-red-50 text-red-700 border-red-200"
                         }`}
                       >
                         {strength}
@@ -147,148 +204,196 @@ export default function ScientificReport({ report, rankedLigands }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
 
       {/* Key Findings */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">🔑 Key Findings</h3>
-          <button
+      <motion.div
+        className="glass rounded-xl p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <FiKey className="w-5 h-5 text-green-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Key Findings</h3>
+          </div>
+          <CopyButton
             onClick={() =>
               copyToClipboard(generateKeyFindings(rankedLigands), "findings")
             }
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            {copiedSection === "findings" ? "✓ Copied" : "📋 Copy"}
-          </button>
+            copied={copiedSection}
+            section="findings"
+          />
         </div>
-        <ul className="space-y-2 text-gray-700">
-          <li className="flex items-start">
-            <span className="mr-2">•</span>
+        <ul className="space-y-3 text-gray-700">
+          <li className="flex items-start gap-2">
+            <span className="text-blue-600 mt-1">•</span>
             <span>
-              <strong>{rankedLigands[0]?.ligand_name}</strong> exhibited the
-              strongest binding affinity ({rankedLigands[0]?.binding_affinity}{" "}
-              kcal/mol), indicating favorable protein-ligand interactions.
+              <strong className="text-gray-900">
+                {rankedLigands[0]?.ligand_name}
+              </strong>{" "}
+              exhibited the strongest binding affinity (
+              {rankedLigands[0]?.binding_affinity} kcal/mol), indicating
+              favorable protein-ligand interactions.
             </span>
           </li>
-          <li className="flex items-start">
-            <span className="mr-2">•</span>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-600 mt-1">•</span>
             <span>
-              A total of <strong>{rankedLigands.length} compounds</strong> were
-              evaluated using AutoDock Vina.
+              A total of{" "}
+              <strong className="text-gray-900">
+                {rankedLigands.length} compounds
+              </strong>{" "}
+              were evaluated using AutoDock Vina.
             </span>
           </li>
-          <li className="flex items-start">
-            <span className="mr-2">•</span>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-600 mt-1">•</span>
             <span>
               Binding affinities ranged from{" "}
-              <strong>{rankedLigands[0]?.binding_affinity}</strong> to{" "}
-              <strong>
+              <strong className="text-gray-900">
+                {rankedLigands[0]?.binding_affinity}
+              </strong>{" "}
+              to{" "}
+              <strong className="text-gray-900">
                 {rankedLigands[rankedLigands.length - 1]?.binding_affinity}
               </strong>{" "}
               kcal/mol.
             </span>
           </li>
-          <li className="flex items-start">
-            <span className="mr-2">•</span>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-600 mt-1">•</span>
             <span>
               Top candidates warrant further experimental validation through
               biochemical assays.
             </span>
           </li>
         </ul>
-      </div>
+      </motion.div>
 
       {/* Methods Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">🔬 Methods</h3>
-          <button
+      <motion.div
+        className="glass rounded-xl p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <FiBook className="w-5 h-5 text-purple-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Methods</h3>
+          </div>
+          <CopyButton
             onClick={() => copyToClipboard(generateMethodsText(), "methods")}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            {copiedSection === "methods" ? "✓ Copied" : "📋 Copy"}
-          </button>
+            copied={copiedSection}
+            section="methods"
+          />
         </div>
-        <div className="prose prose-sm max-w-none text-gray-700">
-          <p className="mb-3">
-            <strong>Molecular Docking:</strong> Docking simulations were
-            performed using AutoDock Vina. Ligand structures were prepared in
-            PDBQT format, and binding affinities (ΔG) were calculated for each
-            ligand-protein complex.
-          </p>
-          <p className="mb-3">
-            <strong>Ranking Criteria:</strong> Compounds were ranked by
-            predicted binding affinity in ascending order, where more negative
-            values indicate stronger binding.
+        <div className="space-y-3 text-gray-700 text-sm leading-relaxed">
+          <p>
+            <strong className="text-gray-900">Molecular Docking:</strong>{" "}
+            Docking simulations were performed using AutoDock Vina. Ligand
+            structures were prepared in PDBQT format, and binding affinities
+            (ΔG) were calculated for each ligand-protein complex.
           </p>
           <p>
-            <strong>Analysis:</strong> The best-scoring pose for each ligand was
-            selected for further analysis.
+            <strong className="text-gray-900">Ranking Criteria:</strong>{" "}
+            Compounds were ranked by predicted binding affinity in ascending
+            order, where more negative values indicate stronger binding.
+          </p>
+          <p>
+            <strong className="text-gray-900">Analysis:</strong> The
+            best-scoring pose for each ligand was selected for further analysis.
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Discussion Points */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">
-            💬 Discussion Points
-          </h3>
-          <button
+      <motion.div
+        className="glass rounded-xl p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <FiMessageSquare className="w-5 h-5 text-orange-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">
+              Discussion Points
+            </h3>
+          </div>
+          <CopyButton
             onClick={() =>
               copyToClipboard(generateDiscussion(rankedLigands), "discussion")
             }
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            {copiedSection === "discussion" ? "✓ Copied" : "📋 Copy"}
-          </button>
+            copied={copiedSection}
+            section="discussion"
+          />
         </div>
-        <div className="space-y-3 text-gray-700">
+        <div className="space-y-3 text-gray-700 text-sm leading-relaxed">
           <p>
             The computational screening identified{" "}
-            <strong>{rankedLigands[0]?.ligand_name}</strong> as the most
-            promising candidate with a binding affinity of{" "}
+            <strong className="text-gray-900">
+              {rankedLigands[0]?.ligand_name}
+            </strong>{" "}
+            as the most promising candidate with a binding affinity of{" "}
             {rankedLigands[0]?.binding_affinity} kcal/mol. This suggests
             favorable interactions with the target protein binding site.
           </p>
-          <p>
-            {rankedLigands.length > 1 && (
-              <>
-                Additionally, <strong>{rankedLigands[1]?.ligand_name}</strong>{" "}
-                showed competitive binding ({rankedLigands[1]?.binding_affinity}{" "}
-                kcal/mol) and may serve as an alternative scaffold for
-                optimization.
-              </>
-            )}
-          </p>
-          <p className="text-sm italic text-gray-600 mt-4 pt-4 border-t">
-            <strong>Note:</strong> These computational predictions require
-            experimental validation. Binding affinities are theoretical
-            estimates and may not directly correlate with biological activity.
-          </p>
+          {rankedLigands.length > 1 && (
+            <p>
+              Additionally,{" "}
+              <strong className="text-gray-900">
+                {rankedLigands[1]?.ligand_name}
+              </strong>{" "}
+              showed competitive binding ({rankedLigands[1]?.binding_affinity}{" "}
+              kcal/mol) and may serve as an alternative scaffold for
+              optimization.
+            </p>
+          )}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-xs italic text-gray-600">
+              <strong>Note:</strong> These computational predictions require
+              experimental validation. Binding affinities are theoretical
+              estimates and may not directly correlate with biological activity.
+            </p>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Citation Format */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">
-            📚 Citation Format
-          </h3>
-          <button
+      <motion.div
+        className="glass rounded-xl p-6 bg-gray-50/50"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gray-200 rounded-lg">
+              <FiBookmark className="w-5 h-5 text-gray-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Citation Format</h3>
+          </div>
+          <CopyButton
             onClick={() => copyToClipboard(generateCitation(), "citation")}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            {copiedSection === "citation" ? "✓ Copied" : "📋 Copy"}
-          </button>
+            copied={copiedSection}
+            section="citation"
+          />
         </div>
-        <p className="text-sm text-gray-700 font-mono bg-white p-3 rounded border">
+        <p className="text-sm text-gray-700 font-mono bg-white p-4 rounded-lg border border-gray-200">
           Molecular docking analysis performed using DockSight AI (v0.1.0) with
           AutoDock Vina. Analysis verified on Solana blockchain for
           reproducibility.
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }
