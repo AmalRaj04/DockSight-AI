@@ -143,7 +143,7 @@ export default function ExecutiveSummary({ rankedLigands, attestation }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
-                <FiCheckCircle className="w-5 h-5 text-green-600" />
+                <FiCheckCircle className="w-5 h-5 text-green-700" />
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-900">

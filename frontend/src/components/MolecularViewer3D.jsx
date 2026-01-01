@@ -1,4 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  FiRotateCw,
+  FiZoomIn,
+  FiZoomOut,
+  FiMaximize2,
+  FiMinimize2,
+  FiRefreshCw,
+  FiCamera,
+  FiEye,
+  FiMove,
+} from "react-icons/fi";
 
 export default function MolecularViewer3D({
   pdbqtData,
@@ -9,6 +21,8 @@ export default function MolecularViewer3D({
   const viewerRef = useRef(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentView, setCurrentView] = useState("default");
 
   useEffect(() => {
     if (!pdbqtData || !containerRef.current) {
@@ -57,10 +71,11 @@ export default function MolecularViewer3D({
           containerRef.current.innerHTML = "";
         }
 
-        // Create viewer with explicit config
+        // Create viewer with enhanced config
         const config = {
           backgroundColor: "white",
           antialias: true,
+          alpha: true,
         };
 
         const viewer = window.$3Dmol.createViewer(
@@ -79,30 +94,29 @@ export default function MolecularViewer3D({
           throw new Error("Failed to add model");
         }
 
-        // Set style - use ball and stick
+        // Set enhanced style - use ball and stick with better colors
         viewer.setStyle(
           {},
           {
             stick: {
               colorscheme: "Jmol",
-              radius: 0.2,
+              radius: 0.25,
             },
             sphere: {
-              scale: 0.3,
+              scale: 0.35,
               colorscheme: "Jmol",
             },
           }
         );
 
+        // Improve lighting and rendering
+        viewer.setBackgroundColor("white");
+
         // Zoom to fit
         viewer.zoomTo();
 
-        // Render
+        // Render with better quality
         viewer.render();
-
-        // Enable rotation
-        viewer.rotate(90, "y");
-        viewer.spin(true);
 
         viewerRef.current = viewer;
         setLoading(false);
@@ -129,48 +143,233 @@ export default function MolecularViewer3D({
     };
   }, [pdbqtData]);
 
+  const handleRotate = () => {
+    if (viewerRef.current) {
+      viewerRef.current.rotate(90, "y");
+      viewerRef.current.render();
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (viewerRef.current) {
+      viewerRef.current.zoom(1.2);
+      viewerRef.current.render();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (viewerRef.current) {
+      viewerRef.current.zoom(0.8);
+      viewerRef.current.render();
+    }
+  };
+
+  const handleReset = () => {
+    if (viewerRef.current) {
+      viewerRef.current.zoomTo();
+      viewerRef.current.render();
+      setCurrentView("default");
+    }
+  };
+
+  const handlePresetView = (view) => {
+    if (!viewerRef.current) return;
+
+    const viewer = viewerRef.current;
+
+    switch (view) {
+      case "front":
+        viewer.rotate(0, "x");
+        viewer.rotate(0, "y");
+        viewer.rotate(0, "z");
+        break;
+      case "side":
+        viewer.rotate(0, "x");
+        viewer.rotate(90, "y");
+        viewer.rotate(0, "z");
+        break;
+      case "top":
+        viewer.rotate(90, "x");
+        viewer.rotate(0, "y");
+        viewer.rotate(0, "z");
+        break;
+      default:
+        break;
+    }
+
+    viewer.render();
+    setCurrentView(view);
+  };
+
+  const handleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handleScreenshot = () => {
+    if (viewerRef.current) {
+      try {
+        const canvas = viewerRef.current.getCanvas();
+        const link = document.createElement("a");
+        link.download = `${ligandName || "molecule"}_3d_view.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+      } catch (err) {
+        console.error("Screenshot failed:", err);
+      }
+    }
+  };
+
+  const controlButtons = [
+    { icon: FiRotateCw, label: "Rotate", onClick: handleRotate },
+    { icon: FiZoomIn, label: "Zoom In", onClick: handleZoomIn },
+    { icon: FiZoomOut, label: "Zoom Out", onClick: handleZoomOut },
+    { icon: FiRefreshCw, label: "Reset", onClick: handleReset },
+    { icon: FiCamera, label: "Screenshot", onClick: handleScreenshot },
+    {
+      icon: isFullscreen ? FiMinimize2 : FiMaximize2,
+      label: isFullscreen ? "Exit Fullscreen" : "Fullscreen",
+      onClick: handleFullscreen,
+    },
+  ];
+
+  const presetViews = [
+    { id: "front", label: "Front", icon: FiEye },
+    { id: "side", label: "Side", icon: FiMove },
+    { id: "top", label: "Top", icon: FiEye },
+  ];
+
   return (
-    <div className="relative">
+    <motion.div
+      className={`relative ${
+        isFullscreen ? "fixed inset-0 z-50 bg-white" : ""
+      }`}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Enhanced Controls */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+        {/* Main Controls */}
+        <div className="flex flex-wrap gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-gray-200">
+          {controlButtons.map((button, index) => (
+            <motion.button
+              key={index}
+              onClick={button.onClick}
+              className="p-2 bg-white hover:bg-gray-50 rounded-lg shadow-sm border border-gray-200 transition-colors group"
+              title={button.label}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <button.icon className="w-4 h-4 text-gray-600 group-hover:text-gray-900" />
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Preset Views */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-gray-200">
+          <div className="text-xs font-medium text-gray-600 mb-2 px-1">
+            Preset Views
+          </div>
+          <div className="flex gap-1">
+            {presetViews.map((view) => (
+              <motion.button
+                key={view.id}
+                onClick={() => handlePresetView(view.id)}
+                className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                  currentView === view.id
+                    ? "bg-blue-100 text-blue-700 border border-blue-200"
+                    : "bg-white hover:bg-gray-50 text-gray-600 border border-gray-200"
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {view.label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Viewer Container */}
       <div
         ref={containerRef}
         style={{
           width: "100%",
-          height,
+          height: isFullscreen ? "100vh" : height,
           position: "relative",
-          minHeight: height,
+          minHeight: isFullscreen ? "100vh" : height,
         }}
-        className="border border-gray-200 rounded-lg bg-white"
+        className="border border-gray-200 rounded-lg bg-white overflow-hidden"
       />
 
+      {/* Loading State */}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg">
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <motion.div
+              className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
             <p className="text-sm text-gray-600">Loading 3D viewer...</p>
           </div>
-        </div>
+        </motion.div>
       )}
 
+      {/* Error State */}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-50 bg-opacity-90 rounded-lg">
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center bg-red-50 bg-opacity-90 rounded-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           <div className="text-center text-red-600 p-4">
             <p className="text-sm font-medium mb-2">⚠️ Viewer Error</p>
             <p className="text-xs">{error}</p>
           </div>
-        </div>
+        </motion.div>
       )}
 
+      {/* Ligand Name Badge */}
       {!loading && !error && ligandName && (
-        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium shadow-lg">
+        <motion.div
+          className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium shadow-lg z-10"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5 }}
+        >
           {ligandName}
-        </div>
+        </motion.div>
       )}
 
+      {/* Instructions */}
       {!loading && !error && (
-        <div className="absolute bottom-2 right-2 bg-white bg-opacity-90 px-3 py-1 rounded text-xs text-gray-600 shadow">
-          🖱️ Drag to rotate • 🔍 Scroll to zoom
-        </div>
+        <motion.div
+          className="absolute bottom-4 right-4 bg-white bg-opacity-90 px-3 py-1 rounded text-xs text-gray-600 shadow backdrop-blur-sm border border-gray-200"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          🖱️ Drag to rotate • 🔍 Scroll to zoom • Use controls for presets
+        </motion.div>
       )}
-    </div>
+
+      {/* Fullscreen Close Button */}
+      {isFullscreen && (
+        <motion.button
+          onClick={handleFullscreen}
+          className="absolute top-4 right-4 p-3 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition-colors z-20"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <FiMinimize2 className="w-5 h-5" />
+        </motion.button>
+      )}
+    </motion.div>
   );
 }

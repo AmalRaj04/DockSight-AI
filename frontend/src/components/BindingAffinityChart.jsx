@@ -31,14 +31,14 @@ export default function BindingAffinityChart({ rankedLigands }) {
 
   // Color code by binding strength with gradients
   const backgroundColors = affinities.map((affinity) => {
-    if (affinity <= -9.0) return "rgba(34, 197, 94, 0.85)"; // Strong (green)
-    if (affinity <= -7.0) return "rgba(234, 179, 8, 0.85)"; // Moderate (yellow)
+    if (affinity <= -8.0) return "rgba(34, 197, 94, 0.85)"; // Strong (green)
+    if (affinity <= -6.0) return "rgba(234, 179, 8, 0.85)"; // Moderate (yellow)
     return "rgba(239, 68, 68, 0.85)"; // Weak (red)
   });
 
   const borderColors = affinities.map((affinity) => {
-    if (affinity <= -9.0) return "rgb(34, 197, 94)";
-    if (affinity <= -7.0) return "rgb(234, 179, 8)";
+    if (affinity <= -8.0) return "rgb(34, 197, 94)";
+    if (affinity <= -6.0) return "rgb(234, 179, 8)";
     return "rgb(239, 68, 68)";
   });
 
@@ -61,8 +61,18 @@ export default function BindingAffinityChart({ rankedLigands }) {
     responsive: true,
     maintainAspectRatio: false,
     animation: {
-      duration: 1000,
+      duration: 1500,
       easing: "easeInOutQuart",
+      delay: (context) => {
+        // Stagger bar animations
+        return context.dataIndex * 100;
+      },
+      onProgress: (animation) => {
+        // Add a subtle bounce effect at the end
+        if (animation.currentStep === animation.numSteps) {
+          animation.chart.update("none");
+        }
+      },
     },
     plugins: {
       legend: {
@@ -76,6 +86,14 @@ export default function BindingAffinityChart({ rankedLigands }) {
         borderWidth: 1,
         padding: 12,
         displayColors: false,
+        cornerRadius: 8,
+        titleFont: {
+          size: 14,
+          weight: "600",
+        },
+        bodyFont: {
+          size: 13,
+        },
         callbacks: {
           title: function (context) {
             return context[0].label;
@@ -83,9 +101,26 @@ export default function BindingAffinityChart({ rankedLigands }) {
           label: function (context) {
             const value = context.parsed.y;
             const strength =
-              value <= -9.0 ? "Strong" : value <= -7.0 ? "Moderate" : "Weak";
+              value <= -8.0 ? "Strong" : value <= -6.0 ? "Moderate" : "Weak";
             return [`ΔG: ${value} kcal/mol`, `Binding: ${strength}`];
           },
+        },
+        // Add hover animations
+        external: function (context) {
+          const tooltip = context.tooltip;
+          if (tooltip.opacity === 0) return;
+
+          // Add subtle scale animation on hover
+          const chart = context.chart;
+          const activeElements = chart.getActiveElements();
+
+          if (activeElements.length > 0) {
+            const element = activeElements[0];
+            const datasetIndex = element.datasetIndex;
+            const index = element.index;
+
+            // You could add custom hover effects here
+          }
         },
       },
     },
@@ -138,6 +173,22 @@ export default function BindingAffinityChart({ rankedLigands }) {
         },
       },
     },
+    // Add hover effects
+    onHover: (event, activeElements, chart) => {
+      event.native.target.style.cursor =
+        activeElements.length > 0 ? "pointer" : "default";
+    },
+    // Add click interactions
+    onClick: (event, activeElements, chart) => {
+      if (activeElements.length > 0) {
+        const element = activeElements[0];
+        const ligandName = chart.data.labels[element.index];
+        const affinity = chart.data.datasets[0].data[element.index];
+
+        // You could trigger a modal or detailed view here
+        console.log(`Clicked on ${ligandName}: ${affinity} kcal/mol`);
+      }
+    },
   };
 
   return (
@@ -146,11 +197,25 @@ export default function BindingAffinityChart({ rankedLigands }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
+      whileHover={{
+        boxShadow:
+          "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+        transition: { duration: 0.3 },
+      }}
     >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-purple-100 rounded-lg">
+      <motion.div
+        className="flex items-center gap-3 mb-6"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <motion.div
+          className="p-2 bg-purple-100 rounded-lg"
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        >
           <FiBarChart2 className="w-5 h-5 text-purple-600" />
-        </div>
+        </motion.div>
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
             Binding Affinity Landscape
@@ -159,27 +224,57 @@ export default function BindingAffinityChart({ rankedLigands }) {
             Lower values indicate stronger binding
           </p>
         </div>
-      </div>
+      </motion.div>
 
-      <div style={{ height: "350px" }}>
+      <motion.div
+        style={{ height: "350px" }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
+      >
         <Bar data={data} options={options} />
-      </div>
+      </motion.div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-green-500"></div>
-          <span className="text-sm text-gray-600">Strong (≤ -9.0)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-yellow-500"></div>
-          <span className="text-sm text-gray-600">Moderate (-9.0 to -7.0)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-red-500"></div>
-          <span className="text-sm text-gray-600">Weak (≥ -7.0)</span>
-        </div>
-      </div>
+      {/* Enhanced Legend with animations */}
+      <motion.div
+        className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-gray-200"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+      >
+        {[
+          {
+            color: "bg-green-500",
+            label: "Strong (≤ -8.0)",
+            count: affinities.filter((a) => a <= -8.0).length,
+          },
+          {
+            color: "bg-yellow-500",
+            label: "Moderate (-8.0 to -6.0)",
+            count: affinities.filter((a) => a > -8.0 && a <= -6.0).length,
+          },
+          {
+            color: "bg-red-500",
+            label: "Weak (≥ -6.0)",
+            count: affinities.filter((a) => a > -6.0).length,
+          },
+        ].map((item, index) => (
+          <motion.div
+            key={item.label}
+            className="flex items-center gap-2"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.2 + index * 0.1 }}
+            whileHover={{ scale: 1.05 }}
+          >
+            <div className={`w-4 h-4 rounded ${item.color}`}></div>
+            <span className="text-sm text-gray-600">{item.label}</span>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+              {item.count}
+            </span>
+          </motion.div>
+        ))}
+      </motion.div>
     </motion.div>
   );
 }

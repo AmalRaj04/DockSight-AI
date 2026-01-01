@@ -93,7 +93,7 @@ export default function ScientificReport({ report, rankedLigands }) {
         </button>
         <button
           onClick={exportToCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
         >
           <FiDownload className="w-4 h-4" />
           Export CSV

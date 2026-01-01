@@ -12,12 +12,16 @@ import {
   FiInfo,
 } from "react-icons/fi";
 import ExecutiveSummary from "../components/ExecutiveSummary";
-import BindingAffinityChart from "../components/BindingAffinityChart";
+import SummaryDashboard from "../components/SummaryDashboard";
 import EnhancedLigandsTable from "../components/EnhancedLigandsTable";
 import CollapsibleSection from "../components/CollapsibleSection";
-import MolecularViewer3D from "../components/MolecularViewer3D";
-import ScientificReport from "../components/ScientificReport";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { LazySection } from "../utils/lazyLoading.jsx";
+
+// Lazy load heavy components
+import LazyBindingAffinityChart from "../components/lazy/LazyBindingAffinityChart";
+import LazyMolecularViewer3D from "../components/lazy/LazyMolecularViewer3D";
+import LazyScientificReport from "../components/lazy/LazyScientificReport";
 
 export default function Analyze() {
   const [result, setResult] = useState(null);
@@ -89,9 +93,27 @@ export default function Analyze() {
           attestation={attestation}
         />
 
-        {/* Binding Affinity Chart */}
+        {/* Summary Dashboard */}
+        <SummaryDashboard
+          rankedLigands={rankedLigands}
+          attestation={attestation}
+        />
+
+        {/* Binding Affinity Chart - Lazy loaded */}
         {rankedLigands.length > 0 && (
-          <BindingAffinityChart rankedLigands={rankedLigands} />
+          <LazySection
+            className="mb-6"
+            placeholder={
+              <div className="glass rounded-xl p-6 mb-6 h-96 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Loading chart...</p>
+                </div>
+              </div>
+            }
+          >
+            <LazyBindingAffinityChart rankedLigands={rankedLigands} />
+          </LazySection>
         )}
 
         {/* Enhanced Ranked Ligands Table */}
@@ -133,7 +155,7 @@ export default function Analyze() {
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 {pdbqtFiles[selectedLigand.ligand_name] ? (
-                  <MolecularViewer3D
+                  <LazyMolecularViewer3D
                     pdbqtData={pdbqtFiles[selectedLigand.ligand_name]}
                     ligandName={selectedLigand.ligand_name}
                     height="500px"
@@ -159,6 +181,7 @@ export default function Analyze() {
             title="Molecular Interactions"
             icon={FiActivity}
             defaultOpen={false}
+            variant="elevated"
           >
             <div className="space-y-4">
               {Object.entries(interactions).map(([ligandName, data]) => (
@@ -189,62 +212,106 @@ export default function Analyze() {
           </CollapsibleSection>
         )}
 
-        {/* Visualization Gallery */}
+        {/* Visualization Gallery - Lazy loaded */}
         {visualizations.length > 0 && (
           <CollapsibleSection
             title="Visualizations"
             icon={FiImage}
             defaultOpen={false}
+            variant="bordered"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visualizations.map((viz, idx) => {
-                const imagePath = viz.output_path || viz;
-                const imageUrl = imagePath.startsWith("http")
-                  ? imagePath
-                  : `http://localhost:8000/${imagePath}`;
-
-                return (
-                  <motion.div
-                    key={idx}
-                    className="glass rounded-lg p-3 cursor-pointer hover:shadow-lg transition-all group"
-                    onClick={() => setSelectedImage(imageUrl)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="relative">
-                      <img
-                        src={imageUrl}
-                        alt={viz.ligand_name || `Visualization ${idx + 1}`}
-                        className="w-full h-48 object-contain rounded bg-white"
-                        onError={(e) => {
-                          e.target.src =
-                            'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="50%" y="50%" text-anchor="middle" fill="gray">Image not available</text></svg>';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded flex items-center justify-center">
-                        <FiMaximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
+            <LazySection
+              placeholder={
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(3)].map((_, idx) => (
+                    <div key={idx} className="glass rounded-lg p-3">
+                      <div className="w-full h-48 bg-gray-200 rounded animate-pulse mb-2" />
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
                     </div>
-                    {viz.ligand_name && (
-                      <p className="text-sm text-gray-700 mt-2 text-center font-medium">
-                        {viz.ligand_name}
-                      </p>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+              }
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {visualizations.map((viz, idx) => {
+                  const imagePath = viz.output_path || viz;
+                  const imageUrl = imagePath.startsWith("http")
+                    ? imagePath
+                    : `http://localhost:8000/${imagePath}`;
+
+                  return (
+                    <motion.div
+                      key={idx}
+                      className="glass rounded-lg p-3 cursor-pointer hover:shadow-lg transition-all group"
+                      onClick={() => setSelectedImage(imageUrl)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="relative">
+                        <img
+                          src={imageUrl}
+                          alt={viz.ligand_name || `Visualization ${idx + 1}`}
+                          loading="lazy"
+                          className="w-full h-48 object-contain rounded bg-white"
+                          onError={(e) => {
+                            e.target.src =
+                              'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="50%" y="50%" text-anchor="middle" fill="gray">Image not available</text></svg>';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded flex items-center justify-center">
+                          <FiMaximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                      {viz.ligand_name && (
+                        <p className="text-sm text-gray-700 mt-2 text-center font-medium">
+                          {viz.ligand_name}
+                        </p>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </LazySection>
           </CollapsibleSection>
         )}
 
-        {/* Scientific Report */}
+        {/* Scientific Report - Lazy loaded */}
         {report && (
           <CollapsibleSection
             title="Scientific Report"
             icon={FiFileText}
             defaultOpen={true}
+            variant="elevated"
           >
-            <ScientificReport report={report} rankedLigands={rankedLigands} />
+            <LazySection
+              placeholder={
+                <div className="space-y-6">
+                  <div className="flex gap-3 flex-wrap">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"
+                      />
+                    ))}
+                  </div>
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="glass rounded-xl p-6">
+                      <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4" />
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              }
+            >
+              <LazyScientificReport
+                report={report}
+                rankedLigands={rankedLigands}
+              />
+            </LazySection>
           </CollapsibleSection>
         )}
 
